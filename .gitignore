@@ -3,3 +3,14 @@
 
 # Ada Library Information
 *.ali
+
+*.yaml
+*.stderr
+*.stdout
+*.xml
+*.bexch
+*.cgpr
+
+saved_runs
+gnatprove
+
