@@ -15,16 +15,17 @@ package rocket_launch is
    Minimum_angle : constant Integer := 0;
    Maximum_viable_angle_of_attack : constant Integer := 135;
    Minimum_viable_angle_of_attack : constant Integer := 45;
-   Maximum_fuel_load : constant Integer := 240;
+   Maximum_fuel_load : constant Float := 240.0;
   
  
-   type Current_Fuel_load is new Integer range 0 .. Maximum_fuel_load;
-   type Angle_of_attack_range is new Integer range Minimum_viable_angle_of_attack ..  Maximum_viable_angle_of_attack;
+   subtype Current_Fuel_load is Float range 0.0 .. Maximum_fuel_load;
+   subtype angle_range is Integer range Minimum_angle .. Maximum_angle;
+   subtype Viable_angle_of_attack_range is angle_range range Minimum_viable_angle_of_attack .. Maximum_viable_angle_of_attack;
    type Rocket_status_type is (Nominal, Not_Nominal);
    
    type rocket_launch_status_type is
       record
-         Angle_measured : Integer;
+         Angle_measured : angle_range;
          Launch_status : Rocket_status_type;
          Current_fuel : Current_Fuel_load;
       end record;
@@ -63,7 +64,8 @@ package rocket_launch is
    procedure correct_course with
      Global => (In_Out => (Standard_Output, Rocket_launch_Status)),
      Depends => (Standard_Output => (Standard_Output, Rocket_launch_Status),
-                Rocket_launch_Status => (Rocket_launch_Status)),
+                 Rocket_launch_Status => (Rocket_launch_Status)),
+       Pre => (Rocket_launch_Status.Angle_measured >= Minimum_angle and Rocket_launch_Status.Angle_measured <= Maximum_angle),
      Post => (is_launch_nominal(Rocket_launch_Status) = False or is_launch_nominal(Rocket_launch_Status) = True);
    
    
