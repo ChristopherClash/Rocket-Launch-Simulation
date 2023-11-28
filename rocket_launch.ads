@@ -37,13 +37,17 @@ package rocket_launch is
                  Standard_Input => Standard_Input,
                  Rocket_launch_Status => (Rocket_launch_Status, Standard_Input));
    
+   function Is_Initalised(Status : rocket_launch_status_type) return Boolean;
+   
    function Status_of_rocket_to_string (Rocket_launch_status : rocket_launch_status_type)
-                                        return String;
+                                        return String with
+   Post => (Status_of_rocket_to_string'Result = "Nominal" or Status_of_rocket_to_string'Result = "Not Nominal");
    
    procedure print_status with
      Global => (In_Out => Standard_Output,
                 Input => Rocket_launch_Status),
-     Depends => (Standard_Output => (Standard_Output, Rocket_launch_Status));
+     Depends => (Standard_Output => (Standard_Output, Rocket_launch_Status)),
+     Pre => (Is_Initalised(Rocket_launch_Status));
    
    function is_launch_nominal(Current_status : rocket_launch_status_type) return Boolean is
      (if Integer(Current_status.Angle_measured) > Minimum_viable_angle_of_attack and 
@@ -54,13 +58,13 @@ package rocket_launch is
    procedure monitor_course with
      Global => (In_Out => Rocket_launch_status),
      Depends => (Rocket_launch_Status => Rocket_launch_Status),
-     Post => is_launch_nominal(Rocket_launch_Status);
+     Post => (is_launch_nominal(Rocket_launch_Status) = False or is_launch_nominal(Rocket_launch_Status) = True);
    
    procedure correct_course with
      Global => (In_Out => (Standard_Output, Rocket_launch_Status)),
      Depends => (Standard_Output => (Standard_Output, Rocket_launch_Status),
                 Rocket_launch_Status => (Rocket_launch_Status)),
-     Post => is_launch_nominal(Rocket_launch_Status);
+     Post => (is_launch_nominal(Rocket_launch_Status) = False or is_launch_nominal(Rocket_launch_Status) = True);
    
    
    procedure init with

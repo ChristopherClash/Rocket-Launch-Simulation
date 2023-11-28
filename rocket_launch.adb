@@ -21,14 +21,21 @@ package body rocket_launch is
       end if;
    end Read_Current_Angle;
                 
-   function Status_of_rocket_to_string (Rocket_launch_status : rocket_launch_status_type)
-                                        return String is
+   function Status_of_rocket_to_string (Rocket_launch_status : rocket_launch_status_type) return String is
    begin
       if (Rocket_launch_Status.Launch_status = Nominal)
       then return "Nominal";
       else return "Not Nominal";
       end if;
    end Status_of_rocket_to_string;
+   
+   function Is_Initalised(Status : rocket_launch_status_type) return Boolean is
+   begin
+      if Status.Launch_status = Nominal or Status.Launch_status = Not_Nominal then
+         return True;
+      else return False;
+      end if;
+   end Is_Initalised;                        
    
    procedure print_status is
    begin
@@ -78,7 +85,11 @@ package body rocket_launch is
          end loop;
       end if;
       AS_Put_Line("Course corrected. Total angle change: " &Integer'Image(Angle_Change) & " Total fuel burned: " &Current_Fuel_load'Image(Fuel_used));
-      Current_fuel_Remaining := Current_fuel_Remaining - Fuel_used;
+      if Current_fuel_Remaining - Fuel_used > 0 then
+         Current_fuel_Remaining := Current_fuel_Remaining - Fuel_used;
+      else
+         AS_Put_Line("Out of fuel, launch has failed!");
+      end if;
       Rocket_launch_Status.Current_fuel := Current_fuel_Remaining;
    end correct_course;
     
