@@ -8,8 +8,10 @@ begin
    init;
    loop
       pragma Loop_Invariant (is_launch_nominal(Rocket_launch_Status));
-      Read_Current_Angle;
-      monitor_course;
-      print_status;
+      if (Rocket_launch_Status.Launch_status = Nominal) then
+         Get_windspeed;
+         monitor_course;
+         print_status;
+      end if;
    end loop;
 end Main;
