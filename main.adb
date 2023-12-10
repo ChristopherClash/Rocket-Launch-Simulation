@@ -7,11 +7,14 @@ procedure Main is
 begin
    init;
    loop
-      pragma Loop_Invariant (is_launch_nominal(Rocket_launch_Status));
-      if (Rocket_launch_Status.Launch_status = Nominal) then
-         Get_windspeed;
-         monitor_course;
-         print_status;
+      pragma Loop_Invariant (get_mission_status(Rocket));
+      if (Rocket.status = Nominal) then
+         Get_target_distance;
+         Get_stage_fuel(Rocket.stage1);
+         Get_stage_fuel(Rocket.stage2);
+         Get_stage_fuel(Rocket.stage3);
+         Launch_rocket(Rocket);
+         Check_launch(Rocket);
       end if;
    end loop;
 end Main;

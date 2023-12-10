@@ -2,100 +2,90 @@ pragma SPARK_Mode (On);
 
 with SPARK.Text_IO; use SPARK.Text_IO;
 
--- This file was created by Christopher Clash
-
--- It is a simple example of a rocket launch system,
--- it monitors the angle of attack and remaining fuel of the rocket, with the rocket's angle being changed during flight.
-
--- The windspeed is a random integer between 1-99 (KM/h),
--- the weight of the rocket is 100KG (for simplicity),
--- the target distance is 1000KM (this is represented as minimum required fuel, where 2 units of fuel = 1km travelled).
-
--- The angle changed is a function of the total weight of the rocket and the windspeed,
--- the function is ((360 * Windspeed) / Weight_of_rocket) - this is made up, but works well enough for our simulation,
--- as it prevents a situation where the angle changed > 359
-
--- If the rocket's angle goes outside the acceptable angle of attack range, 
--- corrective action is taken to bring the rocket back to an angle of attack of 90 degrees.
-
--- However, correcting course uses the limited fuel the rocket has (enough to travel 1.2x the distance),
--- if the rocket runs out of fuel the launch fails.
 
 package rocket_launch is
 
-   Maximum_angle : constant Integer := 359;
-   Minimum_angle : constant Integer := 0;
-   Maximum_viable_angle_of_attack : constant Integer := 110;
-   Minimum_viable_angle_of_attack : constant Integer := 70;
-   Maximum_fuel_load : constant Integer := 2400;
-   Minimum_required_fuel : constant Integer := 1000;
-   Weight_of_rocket : constant Integer := 100;
-   Maximum_windspeed : constant Integer := 99;
-   Minimum_windspeed : constant Integer := 1;
-  
- 
-   subtype Current_Fuel_load is Integer range 0 .. Maximum_fuel_load;
-   subtype angle_range is Integer range Minimum_angle .. Maximum_angle;
-   subtype Viable_angle_of_attack_range is angle_range range Minimum_viable_angle_of_attack .. Maximum_viable_angle_of_attack;
-   type Rocket_status_type is (Nominal, Not_Nominal);
+   Maximum_fuel_load : constant Integer := 5000;
+   Minimum_fuel_load : constant Integer := 0;
+   Minimum_target_distance : constant Integer := 1000;
+   Maximum_target_distance : constant Integer := 5000;
    
-   type rocket_launch_status_type is
+  
+   subtype target_distance is Integer range Minimum_target_distance .. Maximum_target_distance;
+   subtype fuel_range is Integer range Minimum_fuel_load .. Maximum_fuel_load;
+   
+   type mission_status is (Nominal, Failed, Finished);
+   
+   type status is (idle, in_use, out_of_fuel, jettisoned);
+   
+   type stage_type is
       record
-         Angle_measured : angle_range;
-         Launch_status : Rocket_status_type;
-         Current_fuel : Current_Fuel_load;
+         stage_fuel : fuel_range;
+         stage_status : status;
+         stage_number : Integer;
       end record;
    
-   Rocket_launch_Status : rocket_launch_status_type;
    
-   procedure Get_windspeed with
-     Global => (In_Out => (Rocket_launch_Status, Standard_Input), Output => Standard_Output),
-     Depends => (Standard_Output => (Rocket_launch_Status, Standard_Input), Standard_Input => Standard_Input, 
-                 Rocket_launch_Status => (Rocket_launch_Status, Standard_Input));
+   type rocket_type is
+      record
+         stage1 : stage_type;
+         stage2 : stage_type;
+         stage3 : stage_type;
+         target_distance : Integer;
+         current_distance : Integer;
+         status : mission_status; 
+         number_of_stages : Integer := 3;
+      end record;
    
-   function Is_Initalised(Status : rocket_launch_status_type) return Boolean;
+   Rocket : rocket_type;
    
-   function Status_of_rocket_to_string (Rocket_launch_status : rocket_launch_status_type)
+   procedure Get_target_distance with
+     Global => (In_Out => (rocket, Standard_Input), Output => Standard_Output),
+     Depends => (Standard_Output => (Standard_Input), Standard_Input => (Standard_Input), 
+                 rocket => (rocket, Standard_Input));
+   
+   procedure Get_stage_fuel (Stage : in out stage_type) with
+     Depends => (Stage => (Stage, Standard_Input), Standard_Output => (Standard_Input, Stage), Standard_Input => (Standard_Input));
+   
+   procedure launch_rocket(Rocket : in out rocket_type) with
+   Pre => Is_Initialised(Rocket);
+   
+   procedure Fire (Stage : in out stage_type; current_distance : in out Integer);
+   
+   procedure Jettison (Stage : in out stage_type);
+   
+   procedure Check_launch (Rocket : in out rocket_type);
+   
+   procedure Print_stage_statuses with
+     Global => (Input => rocket, Output => Standard_Output);
+   
+   function Is_Initialised(Rocket_status : rocket_type) return Boolean with
+   Post => Is_Initialised'Result = True or Is_Initialised'Result = False;
+   
+   function get_mission_status(Rocket_status : in rocket_type) return boolean is
+      (if Rocket_status.stage1.stage_status = jettisoned and Rocket_status.stage2.stage_status = jettisoned 
+        and Rocket_status.stage3.stage_status = out_of_fuel and Rocket_status.target_distance > Rocket_status.current_distance then
+         Rocket_status.status = Failed else Rocket_status.status = Nominal);
+   
+   function Status_of_rocket_to_string (Rocket_status : rocket_type)
                                         return String with
-   Post => (Status_of_rocket_to_string'Result = "Nominal" or Status_of_rocket_to_string'Result = "Not Nominal");
+     Post => (Status_of_rocket_to_string'Result = "Nominal" or Status_of_rocket_to_string'Result = "Failed" or Status_of_rocket_to_string'Result = "Finished");
    
-   procedure print_status with
+   function Status_of_stage_to_string (Stage : stage_type)
+                                        return String with
+     Post => (Status_of_stage_to_string'Result = "Idle" or Status_of_stage_to_string'Result = "Firing" or Status_of_stage_to_string'Result = "Out of fuel" or 
+             Status_of_stage_to_string'Result = "Jettisoned");
+   
+   procedure print_rocket_info with
      Global => (In_Out => Standard_Output,
-       Input => Rocket_launch_Status),
-     Depends => (Standard_Output => (Standard_Output, Rocket_launch_Status)),
-     Pre => (Is_Initalised(Rocket_launch_Status));
-   
-   function is_launch_nominal(Current_status : rocket_launch_status_type) return Boolean is
-     (if Integer(Current_status.Angle_measured) > Minimum_viable_angle_of_attack and 
-          Integer(Current_status.Angle_measured) < Maximum_viable_angle_of_attack and 
-          Current_status.Current_fuel > Minimum_required_fuel then 
-           Current_status.Launch_status = Nominal else
-              Current_status.Launch_status = Not_Nominal);
-   
-   function Calculate_new_angle(Wind_speed, Weight_of_rocket : Integer) return angle_range is
-      (Integer(360 * Wind_speed) / Weight_of_rocket) with
-     Pre => (Wind_speed >= Minimum_windspeed and Wind_speed <= Maximum_windspeed and Weight_of_rocket >= Wind_speed and Weight_of_rocket = 100),
-     Post => Calculate_new_angle'Result >= Minimum_angle and Calculate_new_angle'Result <= Maximum_angle;
-   
-   function Enough_fuel(Current_Fuel_load : Integer) return Boolean is
-      (Current_Fuel_load < Minimum_required_fuel) with
-     Pre => (Current_Fuel_load <= Maximum_fuel_load);
-
-   
-   procedure monitor_course with
-     Global => (In_Out => Rocket_launch_status),
-     Depends => (Rocket_launch_Status => Rocket_launch_Status),
-     Post => (is_launch_nominal(Rocket_launch_Status) = False or is_launch_nominal(Rocket_launch_Status) = True);
-   
-   procedure correct_course with
-     Global => (In_Out => (Rocket_launch_Status), Output => Standard_Output),
-     Depends => (Rocket_launch_Status => Rocket_launch_Status, Standard_Output => Rocket_launch_Status),
-     Pre => (Rocket_launch_Status.Angle_measured >= Minimum_angle and Rocket_launch_Status.Angle_measured <= Maximum_angle),
-     Post => ((is_launch_nominal(Rocket_launch_Status) = False or (is_launch_nominal(Rocket_launch_Status) = True)));
-   
+       Input => rocket),
+     Depends => (Standard_Output => (Standard_Output, rocket)),
+     Pre => (Is_Initialised(rocket));
    
    procedure init with
-     Global => (Output => (Standard_Output, Standard_Input, Rocket_launch_Status)),
-     Depends => ((Standard_Output, Standard_Input, Rocket_launch_Status) => null),
-       Post => is_launch_nominal(Rocket_launch_Status);
+     Global => (Output => (Standard_Output, Standard_Input, rocket)),
+     Depends => ((Standard_Output, Standard_Input, rocket) => null),
+       Post => get_mission_status(rocket);
+
+   
 end rocket_launch;

@@ -2,134 +2,174 @@ pragma SPARK_Mode (On);
 
 with AS_Io_Wrapper; use AS_Io_Wrapper;
 
-package body rocket_launch is
-   
-   procedure Get_windspeed is
-      Wind_speed : Integer;
-      new_angle : angle_range;
+package body rocket_launch is    
+
+   procedure Get_target_distance is
+      distance : Integer;
    begin
       AS_Init_Standard_Output;
-      AS_Put_Line("Please enter the current windspeed readout (KM/h): ");
+      AS_Put_Line("Please enter the target distance (1000-5000KM): ");
       loop
-         AS_Get(Wind_speed, "Please enter an integer");
-         exit when (Wind_speed >= Minimum_windspeed) and (Wind_speed <= Maximum_windspeed);
-         AS_Put_Line("Please enter a value between " &Integer'Image(Minimum_windspeed) & " and " &Integer'Image(Maximum_windspeed));
+         AS_Get(distance, "Please enter an integer");
+         exit when (distance >= Minimum_target_distance) and (distance <= Maximum_target_distance);
+         AS_Put_Line("Please enter a value between " &Integer'Image(Minimum_target_distance) & " and " &Integer'Image(Maximum_target_distance));
       end loop;
-      new_angle := Calculate_new_angle(Wind_speed, Weight_of_rocket);
-      Rocket_launch_Status.Angle_measured := new_angle;
-      if (Rocket_launch_Status.Angle_measured > Maximum_viable_angle_of_attack) or 
-        (Rocket_launch_Status.Angle_measured < Minimum_viable_angle_of_attack) then
-         correct_course;
-      end if;
-   end Get_windspeed;
+      rocket.target_distance := distance;
+   end Get_target_distance;
    
-                   
-   function Status_of_rocket_to_string (Rocket_launch_status : in rocket_launch_status_type) return String is
+   procedure Get_stage_fuel (Stage : in out stage_type) is
+      fuel_load : Integer;
    begin
-      if (Rocket_launch_Status.Launch_status = Nominal)
+      AS_Init_Standard_Output;
+      AS_Put_Line("Please enter the fuel load for stage" &Integer'image(Stage.stage_number) & " of the rocket (0-5000L): ");
+      loop
+         AS_Get(fuel_load, "Please enter an integer");
+         exit when (fuel_load >= Minimum_fuel_load) and (fuel_load <= Maximum_fuel_load);
+         AS_Put_Line("Please enter a value between " &Integer'Image(Minimum_fuel_load) & " and " &Integer'Image(Maximum_fuel_load));
+      end loop;
+      Stage.stage_fuel := fuel_load;
+   end Get_stage_fuel;
+   
+   procedure launch_rocket(Rocket : in out rocket_type) is
+      Current_distance : Integer := Rocket.current_distance;
+      Target_distance : Integer := Rocket.target_distance;
+   begin 
+      Print_stage_statuses;
+      if Rocket.stage1.stage_status = idle then
+         Rocket.stage1.stage_status := in_use;
+         Print_stage_statuses;
+         Fire(Rocket.stage1, Rocket.current_distance);
+      end if;
+      
+      if Rocket.stage1.stage_status = out_of_fuel and 
+           Rocket.stage2.stage_status = idle and Current_distance < Target_distance then
+         Jettison(Rocket.stage1);
+         Rocket.stage2.stage_status := in_use;
+         Print_stage_statuses;
+         Fire(Rocket.stage2, Rocket.current_distance);
+      end if;
+                  
+      if Rocket.stage1.stage_status = jettisoned and
+           Rocket.stage2.stage_status = out_of_fuel and Current_distance < Target_distance then
+         Jettison(Rocket.stage2);
+         Rocket.stage3.stage_status := in_use;
+         Print_stage_statuses;
+         Fire(Rocket.stage3, Rocket.current_distance);
+      end if;      
+   end launch_rocket;
+   
+   procedure Fire(Stage : in out stage_type; current_distance : in out Integer) is
+      Distance_travelled : Integer;
+   begin
+      if Stage.stage_status = in_use then
+         AS_Put_Line("Firing stage " &Integer'image(Stage.stage_number) & " booster!");
+         Stage.stage_status := out_of_fuel;
+         Print_Stage_statuses;
+         Distance_travelled := Stage.stage_fuel / 2;
+         current_distance := current_distance + Distance_travelled;  
+         AS_Put_Line("Currently travelled " &Integer'image(current_distance) & "KM");
+      end if;
+   end Fire;
+   
+   procedure Jettison(Stage : in out stage_type) is
+   begin
+      if Stage.stage_status = out_of_fuel then
+         Print_Stage_statuses;
+         AS_Put_Line("Stage " &Integer'image(Stage.stage_number) & " is out of fuel!");
+         AS_Put_Line("Jettisoning stage " &Integer'image(Stage.stage_number) & "!");
+         Stage.stage_status := jettisoned;
+      end if;
+   end Jettison;
+   
+   procedure Print_stage_statuses is
+   begin
+      AS_Put_Line("");
+      AS_Put_Line("Stage 1 status: " & Status_of_stage_to_string(rocket.stage1));
+      AS_Put_Line("Stage 2 status: " & Status_of_stage_to_string(rocket.stage2));
+      AS_Put_Line("Stage 3 status: " & Status_of_stage_to_string(rocket.stage3)); 
+      AS_Put_Line("");
+   end Print_stage_statuses;
+   
+      
+   
+   procedure Check_launch (Rocket : in out rocket_type) is
+   begin
+      if Rocket.stage1.stage_status = jettisoned and Rocket.stage2.stage_status = jettisoned 
+        and Rocket.stage3.stage_status = out_of_fuel and Rocket.current_distance < Rocket.target_distance then
+         Rocket.status := Failed;
+         print_rocket_info;
+      end if;
+      if Rocket.current_distance >= Rocket.target_distance then
+         AS_Put_Line("Mission successful, reached target distance!");
+         Rocket.status := Finished;
+         print_rocket_info;
+      else
+         Rocket.status := Nominal;
+      end if;
+   end Check_launch;
+   
+                  
+   function Status_of_rocket_to_string (Rocket_Status : in rocket_type) return String is
+   begin
+      if (Rocket_Status.status = Nominal)
       then return "Nominal";
-      else return "Not Nominal";
+      end if;
+      if (Rocket_Status.status = Finished)
+      then return "Finished";
+      else
+         return "Failed";
       end if;
    end Status_of_rocket_to_string;
    
-   
-   function Is_Initalised(Status : in rocket_launch_status_type) return Boolean is
+   function Status_of_stage_to_string (Stage : in stage_type) return String is
    begin
-      if Status.Launch_status = Nominal or Status.Launch_status = Not_Nominal then
+      if (Stage.stage_status = idle)
+      then return "Idle";
+         end if;
+      if (Stage.stage_status = in_use)
+      then return "Firing";
+         end if;
+      if (Stage.stage_status = out_of_fuel)
+      then return "Out of fuel";
+         end if;
+      if (Stage.stage_status = jettisoned)
+      then return "Jettisoned";
+      end if;
+      return "";
+   end Status_of_stage_to_string;
+   
+   
+   function Is_Initialised(Rocket_status : in rocket_type) return Boolean is
+   begin
+      if Rocket_status.status = Nominal or Rocket_status.status = Failed or Rocket_status.status = Finished then
          return True;
       else return False;
       end if;
-   end Is_Initalised;  
+   end Is_Initialised;  
    
   
-   procedure print_status is
+   procedure print_rocket_info is
    begin
       AS_Put_Line("");
-      AS_Put_Line("Angle of attack = " &Integer'Image(Rocket_launch_Status.Angle_measured));
-      AS_Put_Line("Launch status = " & (Status_of_rocket_to_string(Rocket_launch_Status)));
-      AS_Put_Line("Remaining fuel = " & Integer'Image(Rocket_launch_Status.Current_fuel));
-      AS_Put_Line("");
-   end print_status;
+      AS_Put_Line("Target distance: " &Integer'Image(rocket.target_distance));
+      AS_Put_Line("Current distance: " &Integer'Image(rocket.current_distance));
+      AS_Put_Line("Stage 1 status: " & Status_of_stage_to_string(rocket.stage1));
+      AS_Put_Line("Stage 2 status: " & Status_of_stage_to_string(rocket.stage2));
+      AS_Put_Line("Stage 3 status: " & Status_of_stage_to_string(rocket.stage3));
+      AS_Put_Line("Mission status: " & Status_of_rocket_to_string(rocket));
+  
+   end print_rocket_info;
    
-   
-   procedure monitor_course is
-   begin
-      if Integer(Rocket_launch_Status.Angle_measured) >= Minimum_viable_angle_of_attack and
-        Integer(Rocket_launch_Status.Angle_measured) <= Maximum_viable_angle_of_attack and Integer(Rocket_launch_Status.Current_fuel) > Minimum_required_fuel
-      then Rocket_launch_Status.Launch_status := Nominal;
-      else Rocket_launch_Status.Launch_status := Not_Nominal;
-      end if;
-   end monitor_course;
-   
-   
-   procedure correct_course is
-      Fuel_used : Integer := 0;
-      Current_fuel_Remaining : Current_Fuel_load := Rocket_launch_Status.Current_fuel;
-      Current_angle : angle_range := Rocket_launch_Status.Angle_measured;
-      Angle_Change : angle_range := 0; 
-      Is_enough_fuel : Boolean;
-   begin
-      AS_Init_Standard_Output;
-      AS_Put_Line("Current angle is: " &Integer'Image(Current_angle) & " degrees, correction needed!");
-      if Current_angle < Minimum_viable_angle_of_attack then
-         loop
-            pragma Loop_Invariant(Current_angle >= Minimum_angle and Angle_Change >= Minimum_angle and Fuel_used >= 0 and Fuel_used <= Maximum_fuel_load);
-            if Current_angle < 90 then
-               Current_angle := Current_angle + 1;
-               if Angle_Change + 1 < Maximum_angle then
-                  Angle_Change := Angle_Change + 1;
-                  end if;
-               if Fuel_used + 2 < Maximum_fuel_load then
-                  Fuel_used := Fuel_used + 2;
-               end if;
-               Rocket_launch_Status.Angle_measured := Current_angle;
-            else
-               exit;
-            end if;
-         end loop;
-      elsif Current_angle > Maximum_viable_angle_of_attack then
-         loop
-            pragma Loop_Invariant(Current_angle >= Minimum_angle and Angle_Change >= Minimum_angle and Fuel_used >= 0 and Fuel_used <= Maximum_fuel_load);
-            if 90 < Current_angle then
-                  Current_angle := Current_angle - 1;
-                  if Angle_Change + 1 < Maximum_angle then
-                  Angle_Change := Angle_Change + 1;
-                  end if;
-               if Fuel_used + 2 < Maximum_fuel_load then
-                  Fuel_used := Fuel_used + 2;
-               end if;
-               Rocket_launch_Status.Angle_measured := Current_angle;
-            else
-               exit;
-            end if;
-         end loop;
-      end if;
-      AS_Put_Line("Course corrected.");
-      AS_Put_Line("Total angle changed during correction to optimal angle: " &Integer'Image(Angle_Change));
-      AS_Put_Line("Total fuel burned during correction: " &Integer'Image(Fuel_used));
-      if (Current_fuel_Remaining - Fuel_used >= Minimum_required_fuel) then
-         Is_enough_fuel := Enough_fuel(Current_Fuel_load =>  - Fuel_used);
-         if (Is_enough_fuel) then
-            Current_fuel_Remaining := Current_fuel_Remaining - Fuel_used;
-            AS_Put_Line("Enough fuel remaining");
-         end if; 
-      else
-         AS_Put_Line("");
-         AS_Put_Line("Insufficient fuel to reach orbit, launch has failed!");
-      end if;
-      Rocket_launch_Status.Current_fuel := Current_fuel_Remaining;
-      AS_Put_Line("");
-      AS_Put_Line("Fuel is now: " &Integer'Image(Rocket_launch_Status.Current_fuel));           
-   end correct_course;
-    
-   
+  
    procedure init is
+      stage_1 : stage_type := (stage_fuel => 1000, stage_status => idle, stage_number => 1);
+      stage_2 : stage_type := (stage_fuel => 800, stage_status => idle, stage_number => 2);
+      stage_3 : stage_type := (stage_fuel => 600, stage_status => idle, stage_number => 3);
    begin
-      AS_Init_Standard_Input;
       AS_Init_Standard_Output;
-      Rocket_launch_Status := (Angle_measured => 90,
-                               Launch_status => Nominal,
-                               Current_Fuel => Current_Fuel_load(Maximum_fuel_load));
+      AS_Init_Standard_Input;
+      rocket := (stage1 => stage_1, stage2 => stage_2, stage3 => stage_3, 
+                 target_distance => Minimum_target_distance, current_distance => 0, status => Nominal, number_of_stages => 3);                   
    end init;            
    
 end rocket_launch;
