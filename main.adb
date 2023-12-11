@@ -1,20 +1,20 @@
 pragma SPARK_Mode (On);
 
-with rocket_launch; use rocket_launch;
+with rocket_control; use rocket_control;
 
 procedure Main is
-
+   Mission_Finished : Boolean := False;
 begin
-   init;
+   Init;
    loop
-      pragma Loop_Invariant (get_mission_status(Rocket));
-      if (Rocket.status = Nominal) then
-         Get_target_distance;
-         Get_stage_fuel(Rocket.stage1);
-         Get_stage_fuel(Rocket.stage2);
-         Get_stage_fuel(Rocket.stage3);
-         Launch_rocket(Rocket);
-         Check_launch(Rocket);
+      pragma Loop_Invariant (Get_Mission_Status(Rocket));
+      if not (Mission_Finished) then
+         Get_Target_Distance;
+         Get_Stage_Fuel(Rocket.Stage1);
+         Get_Stage_Fuel(Rocket.Stage2);
+         Get_Stage_Fuel(Rocket.Stage3);
+         Launch_Rocket_And_Check_Distance(Rocket, Mission_Finished);
+      Check_Launch(Rocket);
       end if;
    end loop;
 end Main;

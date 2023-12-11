@@ -31,10 +31,10 @@ package body ada_main is
    E122 : Short_Integer; pragma Import (Ada, E122, "ada__finalization_E");
    E121 : Short_Integer; pragma Import (Ada, E121, "system__file_io_E");
    E111 : Short_Integer; pragma Import (Ada, E111, "ada__text_io_E");
-   E152 : Short_Integer; pragma Import (Ada, E152, "spark__text_io_E");
-   E154 : Short_Integer; pragma Import (Ada, E154, "spark__text_io__integer_io_E");
-   E149 : Short_Integer; pragma Import (Ada, E149, "as_io_wrapper_E");
-   E107 : Short_Integer; pragma Import (Ada, E107, "rocket_launch_E");
+   E130 : Short_Integer; pragma Import (Ada, E130, "spark__text_io_E");
+   E132 : Short_Integer; pragma Import (Ada, E132, "spark__text_io__integer_io_E");
+   E109 : Short_Integer; pragma Import (Ada, E109, "as_io_wrapper_E");
+   E107 : Short_Integer; pragma Import (Ada, E107, "rocket_control_E");
    E002 : Short_Integer; pragma Import (Ada, E002, "main_E");
 
    Sec_Default_Sized_Stacks : array (1 .. 1) of aliased System.Secondary_Stack.SS_Stack (System.Parameters.Runtime_Default_Sec_Stack_Size);
@@ -215,9 +215,10 @@ package body ada_main is
       E111 := E111 + 1;
       SPARK.TEXT_IO'ELAB_SPEC;
       SPARK.TEXT_IO'ELAB_BODY;
-      E152 := E152 + 1;
-      E154 := E154 + 1;
-      E149 := E149 + 1;
+      E130 := E130 + 1;
+      E132 := E132 + 1;
+      E109 := E109 + 1;
+      Rocket_Control'Elab_Spec;
       E107 := E107 + 1;
       E002 := E002 + 1;
    end adainit;
@@ -257,14 +258,14 @@ package body ada_main is
    end;
 
 --  BEGIN Object file/option list
-   --   C:\Users\chris\AdaTasks\CW2 Repo\Ada-Coursework-2\spark.o
-   --   C:\Users\chris\AdaTasks\CW2 Repo\Ada-Coursework-2\spark-text_io.o
-   --   C:\Users\chris\AdaTasks\CW2 Repo\Ada-Coursework-2\spark-text_io-integer_io.o
-   --   C:\Users\chris\AdaTasks\CW2 Repo\Ada-Coursework-2\as_io_wrapper.o
-   --   C:\Users\chris\AdaTasks\CW2 Repo\Ada-Coursework-2\rocket_launch.o
-   --   C:\Users\chris\AdaTasks\CW2 Repo\Ada-Coursework-2\main.o
-   --   -LC:\Users\chris\AdaTasks\CW2 Repo\Ada-Coursework-2\
-   --   -LC:\Users\chris\AdaTasks\CW2 Repo\Ada-Coursework-2\
+   --   C:\Users\chris\Ada-Coursework-2\spark.o
+   --   C:\Users\chris\Ada-Coursework-2\spark-text_io.o
+   --   C:\Users\chris\Ada-Coursework-2\spark-text_io-integer_io.o
+   --   C:\Users\chris\Ada-Coursework-2\as_io_wrapper.o
+   --   C:\Users\chris\Ada-Coursework-2\rocket_control.o
+   --   C:\Users\chris\Ada-Coursework-2\main.o
+   --   -LC:\Users\chris\Ada-Coursework-2\
+   --   -LC:\Users\chris\Ada-Coursework-2\
    --   -LC:/gnat/2021/lib/gcc/x86_64-w64-mingw32/10.3.1/adalib/
    --   -static
    --   -lgnat

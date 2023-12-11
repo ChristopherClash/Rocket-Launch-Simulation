@@ -1,6 +1,6 @@
 project Cw2 is
 
-   for Main use ("rocket_launch.adb") & project'Main;
+   for Main use ("rocket_control.adb") & project'Main;
 
    package Compiler is
       for Default_Switches ("ada") use ("-gnato13");

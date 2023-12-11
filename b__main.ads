@@ -40,7 +40,7 @@ package ada_main is
    pragma Export (C, main, "main");
 
    type Version_32 is mod 2 ** 32;
-   u00001 : constant Version_32 := 16#1f53693a#;
+   u00001 : constant Version_32 := 16#81ba7d2b#;
    pragma Export (C, u00001, "mainB");
    u00002 : constant Version_32 := 16#cd1c0576#;
    pragma Export (C, u00002, "mainS");
@@ -250,10 +250,10 @@ package ada_main is
    pragma Export (C, u00104, "system__string_hashB");
    u00105 : constant Version_32 := 16#09668980#;
    pragma Export (C, u00105, "system__string_hashS");
-   u00106 : constant Version_32 := 16#c76aeecb#;
-   pragma Export (C, u00106, "rocket_launchB");
-   u00107 : constant Version_32 := 16#f9c01d27#;
-   pragma Export (C, u00107, "rocket_launchS");
+   u00106 : constant Version_32 := 16#610cbdb1#;
+   pragma Export (C, u00106, "rocket_controlB");
+   u00107 : constant Version_32 := 16#3ea113fc#;
+   pragma Export (C, u00107, "rocket_controlS");
    u00108 : constant Version_32 := 16#c62af1bf#;
    pragma Export (C, u00108, "as_io_wrapperB");
    u00109 : constant Version_32 := 16#71ffb7c6#;
@@ -336,14 +336,18 @@ package ada_main is
    pragma Export (C, u00147, "system__concat_3B");
    u00148 : constant Version_32 := 16#248a0db1#;
    pragma Export (C, u00148, "system__concat_3S");
-   u00149 : constant Version_32 := 16#932a4690#;
-   pragma Export (C, u00149, "system__concat_4B");
-   u00150 : constant Version_32 := 16#519e7a34#;
-   pragma Export (C, u00150, "system__concat_4S");
-   u00151 : constant Version_32 := 16#eca5ecae#;
-   pragma Export (C, u00151, "system__memoryB");
-   u00152 : constant Version_32 := 16#76873720#;
-   pragma Export (C, u00152, "system__memoryS");
+   u00149 : constant Version_32 := 16#608e2cd1#;
+   pragma Export (C, u00149, "system__concat_5B");
+   u00150 : constant Version_32 := 16#a8a4123a#;
+   pragma Export (C, u00150, "system__concat_5S");
+   u00151 : constant Version_32 := 16#932a4690#;
+   pragma Export (C, u00151, "system__concat_4B");
+   u00152 : constant Version_32 := 16#519e7a34#;
+   pragma Export (C, u00152, "system__concat_4S");
+   u00153 : constant Version_32 := 16#eca5ecae#;
+   pragma Export (C, u00153, "system__memoryB");
+   u00154 : constant Version_32 := 16#76873720#;
+   pragma Export (C, u00154, "system__memoryS");
 
    --  BEGIN ELABORATION ORDER
    --  ada%s
@@ -393,6 +397,8 @@ package ada_main is
    --  system.concat_3%b
    --  system.concat_4%s
    --  system.concat_4%b
+   --  system.concat_5%s
+   --  system.concat_5%b
    --  system.traceback%s
    --  system.traceback%b
    --  ada.characters.handling%s
@@ -494,8 +500,8 @@ package ada_main is
    --  spark.text_io.integer_io%b
    --  as_io_wrapper%s
    --  as_io_wrapper%b
-   --  rocket_launch%s
-   --  rocket_launch%b
+   --  rocket_control%s
+   --  rocket_control%b
    --  main%s
    --  main%b
    --  END ELABORATION ORDER
