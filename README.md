@@ -1,4 +1,4 @@
-The system is designed to be a very basic rocket launch simulation, which tells the user whether, given inputs of a target distance between 1000 and 5000KM, and the fuel loads for stages 1, 2 and 3 of the rocket (between 0 and 5000L per stage), the rocket will reach the target distance. The system does this by:
+This system is designed to be a very basic rocket launch simulation, which tells the user whether, given inputs of a target distance between 1000 and 5000KM, and the fuel loads for stages 1, 2 and 3 of the rocket (between 0 and 5000L per stage), the rocket will reach the target distance. The system does this by:
 1.	Changing the status of the current stage (initially stage 1) from Idle to Firing.
 2.	Calculate the distance travelled using the fuel stored by the current stage (distance = fuel load / 2) and change the status of the current stage to Out_Of_Fuel.
 3.	Update the rocket’s current distance and checks whether this is greater than or equal to the target distance.
